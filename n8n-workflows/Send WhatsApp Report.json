@@ -1,0 +1,195 @@
+{
+  "name": "Send WhatsApp Report",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "6f036323-ca49-4e56-bee4-c22d86eeeb69",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        -112
+      ],
+      "id": "44152cf5-a26d-406a-ab0c-ed9b78275a7c",
+      "name": "Webhook",
+      "webhookId": "6f036323-ca49-4e56-bee4-c22d86eeeb69"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = items[0].json.body;\n\nconst riskColors = { HIGH: '#dc2626', MEDIUM: '#d97706', LOW: '#16a34a' };\nconst riskColor = riskColors[data.riskLevel] || '#555';\n\nconst fullHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<style>\n  body { font-family: Arial, sans-serif; color: #222; margin: 40px; }\n  h1 { color: #1a1a1a; font-size: 22px; }\n  .meta { font-size: 14px; color: #555; margin-bottom: 20px; }\n  .risk-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; color: white; font-weight: bold; background: ${riskColor}; }\n  hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; }\n  h3 { color: #1a1a1a; margin-top: 20px; }\n  ul { padding-left: 20px; line-height: 1.6; }\n  p { line-height: 1.6; }\n  .footer { margin-top: 30px; font-size: 11px; color: #999; }\n</style>\n</head>\n<body>\n  <h1>Vehicle Due-Diligence Report</h1>\n  <div class=\"meta\">\n    <strong>${data.make || ''} ${data.model || ''}</strong> — Registration: ${data.registration}<br/>\n    Risk Level: <span class=\"risk-badge\">${data.riskLevel || 'N/A'}</span> (Score: ${data.riskScore ?? 'N/A'})\n  </div>\n  <hr/>\n  ${data.reportHtml || ''}\n  <div class=\"footer\">\n    Generated automatically from DVSA MOT History data + AI research. Not professional inspection advice.\n  </div>\n</body>\n</html>\n`;\n\nreturn [{ json: { html: fullHtml, phone: data.phone } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        -112
+      ],
+      "id": "59858968-eb0f-4185-bdb8-924a90cef55a",
+      "name": "Build Printable Report"
+    },
+    {
+      "parameters": {
+        "html_content": "={{ $json.html }}"
+      },
+      "type": "n8n-nodes-htmlcsstopdf.htmlcsstopdf",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        -112
+      ],
+      "id": "47593e08-f028-4be8-ae8a-336426f9c41c",
+      "name": "Convert HTML to PDF",
+      "credentials": {
+        "htmlcsstopdfApi": {
+          "id": "oH8mVKyF6UOlzOvi",
+          "name": "HTML to PDF account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.twilio.com/2010-04-01/Accounts/YOUR_TWILIO_ACCOUNT_SID/Messages.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "=Content-Type",
+              "value": "=application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=To",
+              "value": "=whatsapp:{{ $('Build Printable Report').item.json.phone }}"
+            },
+            {
+              "name": "=From",
+              "value": "=whatsapp:+14155238886"
+            },
+            {
+              "name": "=Body",
+              "value": "=Your vehicle due-diligence report is ready."
+            },
+            {
+              "name": "=MediaUrl",
+              "value": "={{ $json.pdf_url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        32,
+        -112
+      ],
+      "id": "a543b599-4dc5-4ac5-967e-16be63f820e4",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "YwlCBLXw3ulvzTFT",
+          "name": "Twilio Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{{ { \"success\": true, \"message\": \"Report sent to WhatsApp\" } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        240,
+        -112
+      ],
+      "id": "08afbf85-2f5f-474a-83ed-432b540c7ef1",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Printable Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Printable Report": {
+      "main": [
+        [
+          {
+            "node": "Convert HTML to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert HTML to PDF": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a52b4623-cd58-4d69-814a-ec9ed02a0385",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "703dbf1457be9ba8a0b61ef8297179cdbb62200e913bd579c56fc05faf683aeb"
+  },
+  "id": "h2CJ3HNi0KPMhEki",
+  "tags": []
+}

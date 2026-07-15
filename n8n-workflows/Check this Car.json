@@ -1,0 +1,536 @@
+{
+  "name": "Check this Car",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "9b0b423e-7a80-4897-b1a0-04294dc097b2",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -816,
+        -432
+      ],
+      "id": "4faafcbd-c15b-4b3a-bbdd-0b3d38b7cbb3",
+      "name": "Webhook",
+      "webhookId": "9b0b423e-7a80-4897-b1a0-04294dc097b2"
+    },
+    {
+      "parameters": {
+        "url": "=https://history.mot.api.gov.uk/v1/trade/vehicles/registration/{{ $('Webhook').item.json.body.registration }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Get OAuth Token').item.json.access_token }}"
+            },
+            {
+              "name": "X-API-Key",
+              "value": "Your_API_KEY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -432,
+        -464
+      ],
+      "id": "2532b08d-c5d3-4047-8180-e8fe39ea92af",
+      "name": "Get MOT History"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://login.microsoftonline.com/a455b827-244f-4c97-b5b4-ce5d13b4d00c/oauth2/v2.0/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "YOUR_CLIENT_ID"
+            },
+            {
+              "name": "client_secret",
+              "value": "YOUR_CLIENT_SECRET"
+            },
+            {
+              "name": "scope",
+              "value": "https://tapi.dvsa.gov.uk/.default"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -640,
+        -192
+      ],
+      "id": "cca2f529-32e7-4ea1-a687-444a0c0f1090",
+      "name": "Get OAuth Token"
+    },
+    {
+      "parameters": {
+        "jsCode": "const vehicle = Array.isArray(items[0].json) ? items[0].json[0] : items[0].json;\n\nconst tests = vehicle.motTests\n  .filter(t => t.odometerValue !== null)\n  .map(t => ({\n    date: t.completedDate,\n    mileage: parseInt(t.odometerValue),\n    result: t.testResult,\n  }))\n  .sort((a, b) => new Date(a.date) - new Date(b.date));\n\nconst flags = [];\n\nfor (let i = 1; i < tests.length; i++) {\n  const prev = tests[i - 1];\n  const curr = tests[i];\n  const mileageDiff = curr.mileage - prev.mileage;\n  const daysDiff = (new Date(curr.date) - new Date(prev.date)) / (1000 * 60 * 60 * 24);\n\n  if (mileageDiff < 0) {\n    flags.push(`Mileage DECREASED between ${prev.date.slice(0,10)} and ${curr.date.slice(0,10)} (${prev.mileage} → ${curr.mileage}) — possible clocking`);\n  } else if (daysDiff > 0 && (mileageDiff / daysDiff) > 200) {\n    flags.push(`Unusually high mileage jump: ${mileageDiff} miles in ${Math.round(daysDiff)} days between ${prev.date.slice(0,10)} and ${curr.date.slice(0,10)}`);\n  }\n}\n\nconst totalFails = vehicle.motTests.filter(t => t.testResult === 'FAILED').length;\nconst dangerousDefects = vehicle.motTests.flatMap(t => t.defects).filter(d => d.dangerous === true);\n\n// Calculate a risk score based on multiple factors\nlet riskScore = 0;\nriskScore += totalFails * 2;\nriskScore += flags.length * 5;\nriskScore += dangerousDefects.length * 4;\n\n// Categorize into a simple risk level\nlet riskLevel = 'LOW';\nif (riskScore >= 8) {\n  riskLevel = 'HIGH';\n} else if (riskScore >= 3) {\n  riskLevel = 'MEDIUM';\n}\n\nreturn [{\n  json: {\n    make: vehicle.make,\n    model: vehicle.model,\n    registration: vehicle.registration,\n    firstUsedDate: vehicle.firstUsedDate,\n    totalTests: vehicle.motTests.length,\n    totalFails: totalFails,\n    mileageFlags: flags,\n    dangerousDefectCount: dangerousDefects.length,\n    latestMileage: tests[tests.length - 1]?.mileage,\n    riskScore: riskScore,\n    riskLevel: riskLevel,\n    rawMotTests: vehicle.motTests,\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -352
+      ],
+      "id": "fd0d638f-8d81-4bc0-a2f8-adf303ccfade",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "846e311c-a81d-4f40-9535-a1cc11487867",
+              "leftValue": "={{ $json.registration }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -240,
+        -128
+      ],
+      "id": "74427ecb-1bf2-4a5a-9cd8-30b05f2b7968",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2bf377b4-6546-47fa-890d-d6f219d8c3a1",
+              "name": "error",
+              "value": "No MOT history found for this registration. Please check the plate number and try again.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -48,
+        48
+      ],
+      "id": "074c5af4-4c63-43ba-8a53-ad6602acf975",
+      "name": "Set Node"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.riskLevel.trim() }}",
+                    "rightValue": "HIGH",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0ec84acf-aa9d-43e2-b8ea-37dd02e949ea"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "High Risk"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e8249bd2-6fca-4e04-858c-16680a43a6e5",
+                    "leftValue": "={{ $json.riskLevel.trim() }}",
+                    "rightValue": "MEDIUM",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Medium Risk"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ee9230ca-31dc-4ee1-803f-8cf8ea29df06",
+                    "leftValue": "={{ $json.riskLevel.trim() }}",
+                    "rightValue": "LOW",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Low Risk"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        -640
+      ],
+      "id": "c501a03a-de86-4149-a16c-d614d1a56581",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=A used car due-diligence check has been run. Risk level: {{ $json.riskLevel }} (score: {{ $json.riskScore }}).\n\nVehicle: {{ $json.make }} {{ $json.model }}, first used {{ $json.firstUsedDate }}\nRegistration: {{ $json.registration }}\nTotal MOT tests: {{ $json.totalTests }}\nTotal failures: {{ $json.totalFails }}\nMileage-related red flags: {{ $json.mileageFlags.length > 0 ? $json.mileageFlags.join(', ') : 'None — mileage progression looks consistent' }}\nDangerous defects ever recorded: {{ $json.dangerousDefectCount }}\nCurrent recorded mileage: {{ $json.latestMileage }} miles\n\nFull MOT test history for reference: {{ JSON.stringify($json.rawMotTests) }}\n\nInstructions based on risk level:\n- If risk level is HIGH: open with a clear warning tone, strongly recommend an independent inspection before purchase, and be direct about the specific red flags.\n- If risk level is MEDIUM: note the concerns clearly but keep a balanced, informative tone — not alarming.\n- If risk level is LOW: reassure the reader this looks like a well-maintained vehicle, while still mentioning anything genuinely worth asking about.\n\nThen do the following:\n1. Search the web for common known problems, reliability issues, or recalls for this specific make, model, and approximate age.\n2. Write a plain-English risk assessment covering: overall condition, mileage trustworthiness, what the failure(s) indicate, and what to check/ask about when viewing in person.\n3. Include a \"known issues for this model\" section with real sources cited.\n4. Do not make definitive fraud claims — only flag patterns as \"worth asking about.\"",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        480,
+        -352
+      ],
+      "id": "69625621-d714-4f47-a020-8c2b6662913b",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        -112
+      ],
+      "id": "b4000d71-8c32-456d-bc73-941a31cef01b",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "t4yY2RaGMcLIpnGf",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Searches Google for real-time information. Use this to find common problems, reliability issues, reviews, or known recalls for a specific car make and model.",
+        "q": "={{ $fromAI('Search_Query__q_', ``, 'string') }}",
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-serpapi.serpApiTool",
+      "typeVersion": 1,
+      "position": [
+        656,
+        -112
+      ],
+      "id": "9f57c4b0-e9f2-4ab8-93c8-8378cd1e337e",
+      "name": "Google search in SerpApi",
+      "credentials": {
+        "serpApi": {
+          "id": "bEmzJWHw5bYUQuMY",
+          "name": "SerpApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawText = items[0].json.output;\nconst vehicle = items[0].json;\n\nfunction boldify(text) {\n  let result = text.split('**').map((part, i) => i % 2 === 1 ? `<strong>${part}</strong>` : part).join('');\n  result = result.split('*').map((part, i) => i % 2 === 1 ? `<em style=\"color:#666; font-size:0.9em;\">${part}</em>` : part).join('');\n  return result;\n}\n\nfunction markdownToHtml(md) {\n  const lines = md.split('\\n');\n  let html = '';\n  let inList = false;\n\n  for (let line of lines) {\n    let trimmed = line.trim();\n\n    if (trimmed.startsWith('### ')) {\n      if (inList) { html += '</ul>'; inList = false; }\n      html += `<h3 style=\"color:#1a1a1a; margin-top:24px;\">${boldify(trimmed.slice(4))}</h3>`;\n      continue;\n    }\n    if (trimmed.startsWith('## ')) {\n      if (inList) { html += '</ul>'; inList = false; }\n      html += `<h2 style=\"color:#1a1a1a; border-bottom:2px solid #2563eb; padding-bottom:6px; margin-top:28px;\">${boldify(trimmed.slice(3))}</h2>`;\n      continue;\n    }\n    if (trimmed === '---') {\n      if (inList) { html += '</ul>'; inList = false; }\n      html += '<hr style=\"border:none; border-top:1px solid #ddd; margin:20px 0;\">';\n      continue;\n    }\n    if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {\n      if (!inList) { html += '<ul style=\"padding-left:20px; line-height:1.6;\">'; inList = true; }\n      html += `<li>${boldify(trimmed.slice(2))}</li>`;\n      continue;\n    }\n    const numberedMatch = trimmed.match(/^\\d+\\.\\s+(.*)/);\n    if (numberedMatch) {\n      if (!inList) { html += '<ul style=\"padding-left:20px; line-height:1.6;\">'; inList = true; }\n      html += `<li>${boldify(numberedMatch[1])}</li>`;\n      continue;\n    }\n    if (inList) { html += '</ul>'; inList = false; }\n    if (trimmed === '') continue;\n    html += `<p style=\"line-height:1.6; margin:10px 0;\">${boldify(trimmed)}</p>`;\n  }\n\n  if (inList) html += '</ul>';\n  return html;\n}\n\nconst bodyHtml = markdownToHtml(rawText);\n\n// Return clean structured JSON instead of one big pre-styled div\nreturn [{\n  json: {\n    make: vehicle.make,\n    model: vehicle.model,\n    registration: vehicle.registration,\n    riskLevel: vehicle.riskLevel,\n    riskScore: vehicle.riskScore,\n    reportHtml: bodyHtml,\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        -560
+      ],
+      "id": "98110323-792e-47c1-8587-31cce9119ec1",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1216,
+        -304
+      ],
+      "id": "5c9b552d-22c0-4b11-9c53-900cba61fd5d",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        816,
+        -624
+      ],
+      "id": "11a7043b-4856-45d8-b005-a317bc6f63f5",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get OAuth Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get OAuth Token": {
+      "main": [
+        [
+          {
+            "node": "Get MOT History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get MOT History": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google search in SerpApi": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "386cfbb0-9e1f-40cf-83bf-f3c5435c2f09",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "703dbf1457be9ba8a0b61ef8297179cdbb62200e913bd579c56fc05faf683aeb"
+  },
+  "id": "36xaUz1W49Zik15r",
+  "tags": []
+}
