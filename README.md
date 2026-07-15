@@ -1,9 +1,9 @@
-# PlateCheck — AI-Powered UK Vehicle History Checker
+# PlateCheck AI-Powered UK Vehicle History Checker
 
 An automated due-diligence tool for used car buyers in the UK. Enter a registration
 plate, and it pulls the vehicle's official MOT history from DVSA, analyses the
 mileage trail for signs of odometer fraud, scores an overall risk level, and then
-uses an AI agent — with live web search — to research known issues for that
+uses an AI agent with live web search to research known issues for that
 specific make and model, before writing a plain-English report. Optionally, the
 finished report can be sent as a PDF straight to WhatsApp.
 
@@ -66,7 +66,7 @@ flowchart TD
    DVSA's official API.
 2. **Analyses the mileage trail** - flags mileage decreases (potential clocking)
    and unusually large jumps between tests.
-3. **Scores risk** — combines failure count, dangerous defects, and mileage flags
+3. **Scores risk** - combines failure count, dangerous defects, and mileage flags
    into a LOW / MEDIUM / HIGH score.
 4. **Researches live** - an AI agent decides what to search for, genuinely
    queries the web, and writes a buyer's report combining the hard data with real
