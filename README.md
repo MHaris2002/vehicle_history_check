@@ -106,7 +106,7 @@ flowchart TD
 2. Add your own credentials for: DVSA MOT History API, Google Gemini, SerpAPI,
    PDFMunk, Twilio, Google Sheets
 3. Update the webhook URLs in `frontend/src/App.jsx` to point at your instance
-4. `cd frontend && npm install && npm run dev`
+4. `cd car-checker && npm install && npm run dev`
 
 ---
 
