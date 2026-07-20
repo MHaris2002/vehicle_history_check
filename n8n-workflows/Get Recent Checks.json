@@ -1,0 +1,143 @@
+{
+  "name": "Get Recent Checks",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "recent-checks",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -416,
+        -64
+      ],
+      "id": "eca251ce-e226-4442-b230-5e2aa136511d",
+      "name": "Webhook",
+      "webhookId": "231e5406-4631-47fd-88e6-eeaf04f1610e"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1WyAHMMkUADKWeDEyFidaOIW7w6Uyywh7qbLKnSX49vs",
+          "mode": "list",
+          "cachedResultName": "PlateCheck History",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1WyAHMMkUADKWeDEyFidaOIW7w6Uyywh7qbLKnSX49vs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1WyAHMMkUADKWeDEyFidaOIW7w6Uyywh7qbLKnSX49vs/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -208,
+        -64
+      ],
+      "id": "6d3bed1a-d9af-46a6-83b7-03ce2196abd6",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ULHqumagixLjwLW7",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = items.map(i => i.json);\n\n// Sort newest first\nrows.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));\n\n// Only return the most recent 10\nconst recent = rows.slice(0, 10);\n\nreturn [{ json: { checks: recent } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -64
+      ],
+      "id": "871bbc6d-679c-4f20-8213-bf2ae9b89b45",
+      "name": "Sort and limit"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        208,
+        -64
+      ],
+      "id": "8fa53d25-11d8-4802-838b-57fcc74d7b2a",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Sort and limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort and limit": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "8c05108c-3faa-43a9-9bf4-02188941308c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "703dbf1457be9ba8a0b61ef8297179cdbb62200e913bd579c56fc05faf683aeb"
+  },
+  "id": "Bb6CDDhbrHKiRSW8",
+  "tags": []
+}

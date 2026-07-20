@@ -11,8 +11,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -816,
-        -432
+        -880,
+        -464
       ],
       "id": "4faafcbd-c15b-4b3a-bbdd-0b3d38b7cbb3",
       "name": "Webhook",
@@ -30,7 +30,7 @@
             },
             {
               "name": "X-API-Key",
-              "value": "Your_API_KEY"
+              "value": "YOUR_API_KEY"
             }
           ]
         },
@@ -39,8 +39,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -432,
-        -464
+        -496,
+        -496
       ],
       "id": "2532b08d-c5d3-4047-8180-e8fe39ea92af",
       "name": "Get MOT History"
@@ -76,8 +76,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -640,
-        -192
+        -704,
+        -224
       ],
       "id": "cca2f529-32e7-4ea1-a687-444a0c0f1090",
       "name": "Get OAuth Token"
@@ -89,8 +89,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        0,
-        -352
+        -64,
+        -384
       ],
       "id": "fd0d638f-8d81-4bc0-a2f8-adf303ccfade",
       "name": "Code in JavaScript"
@@ -123,8 +123,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -240,
-        -128
+        -304,
+        -160
       ],
       "id": "74427ecb-1bf2-4a5a-9cd8-30b05f2b7968",
       "name": "If"
@@ -146,8 +146,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -48,
-        48
+        -112,
+        16
       ],
       "id": "074c5af4-4c63-43ba-8a53-ad6602acf975",
       "name": "Set Node"
@@ -252,8 +252,8 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        480,
-        -352
+        416,
+        -384
       ],
       "id": "69625621-d714-4f47-a020-8c2b6662913b",
       "name": "AI Agent"
@@ -266,8 +266,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1.1,
       "position": [
-        464,
-        -112
+        400,
+        -144
       ],
       "id": "b4000d71-8c32-456d-bc73-941a31cef01b",
       "name": "Google Gemini Chat Model",
@@ -289,8 +289,8 @@
       "type": "n8n-nodes-serpapi.serpApiTool",
       "typeVersion": 1,
       "position": [
-        656,
-        -112
+        592,
+        -144
       ],
       "id": "9f57c4b0-e9f2-4ab8-93c8-8378cd1e337e",
       "name": "Google search in SerpApi",
@@ -308,8 +308,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1024,
-        -560
+        960,
+        -656
       ],
       "id": "98110323-792e-47c1-8587-31cce9119ec1",
       "name": "Code in JavaScript1"
@@ -336,7 +336,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1216,
+        1248,
         -304
       ],
       "id": "5c9b552d-22c0-4b11-9c53-900cba61fd5d",
@@ -351,11 +351,118 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        816,
-        -624
+        752,
+        -656
       ],
       "id": "11a7043b-4856-45d8-b005-a317bc6f63f5",
       "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1WyAHMMkUADKWeDEyFidaOIW7w6Uyywh7qbLKnSX49vs",
+          "mode": "list",
+          "cachedResultName": "PlateCheck History",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1WyAHMMkUADKWeDEyFidaOIW7w6Uyywh7qbLKnSX49vs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1WyAHMMkUADKWeDEyFidaOIW7w6Uyywh7qbLKnSX49vs/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $now.toISO() }}",
+            "registration": "={{ $json.registration }}",
+            "make": "={{ $json.make }}",
+            "model": "={{ $json.model }}",
+            "riskLevel": "={{ $json.riskLevel }}",
+            "riskScore": "={{ $json.riskScore }}"
+          },
+          "matchingColumns": [
+            "registration"
+          ],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "registration",
+              "displayName": "registration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "make",
+              "displayName": "make",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "riskLevel",
+              "displayName": "riskLevel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "riskScore",
+              "displayName": "riskScore",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1232,
+        -560
+      ],
+      "id": "fb18522c-999d-4790-a2e3-e6c4639fe198",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ULHqumagixLjwLW7",
+          "name": "Google Sheets account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -499,6 +606,11 @@
       "main": [
         [
           {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
             "node": "Respond to Webhook",
             "type": "main",
             "index": 0
@@ -516,9 +628,14 @@
           }
         ]
       ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        []
+      ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
@@ -526,7 +643,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "versionId": "386cfbb0-9e1f-40cf-83bf-f3c5435c2f09",
+  "versionId": "6436fd4c-e9f9-43f0-b47c-1998b7d2590c",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "703dbf1457be9ba8a0b61ef8297179cdbb62200e913bd579c56fc05faf683aeb"
