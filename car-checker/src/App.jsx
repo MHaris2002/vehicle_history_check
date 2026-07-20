@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   ShieldCheck, ShieldAlert, ShieldQuestion, Loader2, Settings2, X, Car,
   MessageCircle, Search, Sparkles, FileText, Menu, ArrowRight, CheckCircle2,
@@ -240,7 +240,27 @@ export default function PlateCheckSite() {
   const [sendingWa, setSendingWa] = useState(false);
   const [waStatus, setWaStatus] = useState("");
 
+  const [recentChecks, setRecentChecks] = useState([]);
+  const [recentChecksUrl, setRecentChecksUrl] = useState(
+    "http://localhost:5678/webhook/recent-checks"
+  );
+
   const heroRef = useRef(null);
+
+  useEffect(() => {
+    fetch(recentChecksUrl)
+      .then((res) => res.json())
+      .then((data) => setRecentChecks(data.checks || []))
+      .catch(() => setRecentChecks([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function refreshRecentChecks() {
+    fetch(recentChecksUrl)
+      .then((res) => res.json())
+      .then((d) => setRecentChecks(d.checks || []))
+      .catch(() => {});
+  }
 
   async function handleCheck() {
     const cleaned = formatReg(reg);
@@ -265,6 +285,7 @@ export default function PlateCheckSite() {
         data = { make: "", model: "", registration: cleaned, riskLevel: null, riskScore: null, reportHtml: text };
       }
       setResult(data);
+      refreshRecentChecks();
     } catch {
       setError("Couldn't reach the checker. Confirm the webhook URL and that n8n is running.");
     } finally {
@@ -357,6 +378,12 @@ export default function PlateCheckSite() {
                   <div>
                     <label className="text-xs font-mono text-white/50">WHATSAPP-SEND WEBHOOK URL</label>
                     <input value={whatsappWebhookUrl} onChange={(e) => setWhatsappWebhookUrl(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 rounded text-xs font-mono"
+                      style={{ backgroundColor: "#0F1114", color: "white", border: "1px solid #2A2E35" }} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-mono text-white/50">RECENT-CHECKS WEBHOOK URL</label>
+                    <input value={recentChecksUrl} onChange={(e) => setRecentChecksUrl(e.target.value)}
                       className="w-full mt-1 px-3 py-2 rounded text-xs font-mono"
                       style={{ backgroundColor: "#0F1114", color: "white", border: "1px solid #2A2E35" }} />
                   </div>
@@ -504,6 +531,42 @@ export default function PlateCheckSite() {
             </div>
           </div>
 
+          {/* Recent checks */}
+          {recentChecks.length > 0 && (
+            <div className="max-w-2xl mx-auto px-4 sm:px-8 py-14">
+              <h2 className="text-xl sm:text-2xl font-bold mb-6 text-center" style={{ color: "#111" }}>
+                Recently checked
+              </h2>
+              <div className="flex flex-col gap-3">
+                {recentChecks.map((check, i) => {
+                  const meta = RISK_META[check.riskLevel] || {};
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between rounded-lg p-4"
+                      style={{ backgroundColor: "white", border: `1px solid ${COLORS.paperEdge}` }}
+                    >
+                      <div>
+                        <p className="font-semibold text-sm" style={{ color: "#111" }}>
+                          {check.make} {check.model}
+                        </p>
+                        <p className="text-xs" style={{ color: COLORS.slate }}>{check.registration}</p>
+                      </div>
+                      {meta.Icon && (
+                        <div className="flex items-center gap-2">
+                          <meta.Icon size={16} color={meta.color} />
+                          <span className="text-xs font-semibold" style={{ color: meta.color }}>
+                            {check.riskLevel}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Scam awareness — dark break section with floating elements */}
           <div className="relative overflow-hidden" style={{ backgroundColor: COLORS.asphalt }}>
             <AlertTriangle className="absolute top-10 left-8 sm:left-16 float-a" size={36} color={COLORS.plateYellow} style={{ opacity: 0.15 }} />
@@ -546,7 +609,7 @@ export default function PlateCheckSite() {
                 { q: "Where does the data come from?", a: "MOT history comes directly from DVSA's official government API — the same records used by garages and the DVSA themselves." },
                 { q: "Is this a substitute for an inspection?", a: "No. This is a research aid to help you ask the right questions — always get a used car professionally inspected before buying." },
                 { q: "Why does the AI cite sources I should check myself?", a: "The AI searches the web live for known issues, but always verify anything important with the seller or an independent mechanic." },
-                { q: "Is my data stored anywhere?", a: "Checked plates are processed to generate your report; this demo doesn't retain personal information beyond what's needed to run the check." },
+                { q: "Is my data stored anywhere?", a: "Checked plates are logged so recent checks can be shown on this page; this demo doesn't retain personal information beyond what's needed to run the check." },
               ].map((item, i) => (
                 <div key={i} className="rounded-lg p-4 sm:p-5" style={{ backgroundColor: "white", border: `1px solid ${COLORS.paperEdge}` }}>
                   <p className="font-semibold text-sm mb-1" style={{ color: "#111" }}>{item.q}</p>
