@@ -240,6 +240,13 @@ export default function PlateCheckSite() {
   const [sendingWa, setSendingWa] = useState(false);
   const [waStatus, setWaStatus] = useState("");
 
+  const [email, setEmail] = useState("");
+  const [emailWebhookUrl, setEmailWebhookUrl] = useState(
+    "http://localhost:5678/webhook/send-email"
+  );
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailStatus, setEmailStatus] = useState("");
+
   const [recentChecks, setRecentChecks] = useState([]);
   const [recentChecksUrl, setRecentChecksUrl] = useState(
     "http://localhost:5678/webhook/recent-checks"
@@ -293,6 +300,28 @@ export default function PlateCheckSite() {
     }
   }
 
+  async function handleSendEmail() {
+    setEmailStatus("");
+    if (!email || !email.includes("@")) {
+      setEmailStatus("error:Enter a valid email address");
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      const res = await fetch(emailWebhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, ...result }),
+      });
+      if (res.ok) setEmailStatus("success:Report sent — check your inbox.");
+      else setEmailStatus("error:Something went wrong sending the report.");
+    } catch {
+      setEmailStatus("error:Couldn't reach the send service.");
+    } finally {
+      setSendingEmail(false);
+    }
+  }
+
   async function handleSendWhatsapp() {
     setWaStatus("");
     if (!phone || phone.replace(/\D/g, "").length < 8) {
@@ -322,6 +351,7 @@ export default function PlateCheckSite() {
 
   const risk = result?.riskLevel ? RISK_META[result.riskLevel] : null;
   const [waKind, waMsg] = waStatus.includes(":") ? waStatus.split(":") : ["", ""];
+  const [emailKind, emailMsg] = emailStatus.includes(":") ? emailStatus.split(":") : ["", ""];
 
   return (
     <div className="min-h-screen w-full" style={{ backgroundColor: COLORS.paper }}>
@@ -378,6 +408,12 @@ export default function PlateCheckSite() {
                   <div>
                     <label className="text-xs font-mono text-white/50">WHATSAPP-SEND WEBHOOK URL</label>
                     <input value={whatsappWebhookUrl} onChange={(e) => setWhatsappWebhookUrl(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 rounded text-xs font-mono"
+                      style={{ backgroundColor: "#0F1114", color: "white", border: "1px solid #2A2E35" }} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-mono text-white/50">SEND-EMAIL WEBHOOK URL</label>
+                    <input value={emailWebhookUrl} onChange={(e) => setEmailWebhookUrl(e.target.value)}
                       className="w-full mt-1 px-3 py-2 rounded text-xs font-mono"
                       style={{ backgroundColor: "#0F1114", color: "white", border: "1px solid #2A2E35" }} />
                   </div>
@@ -512,6 +548,33 @@ export default function PlateCheckSite() {
                   <p className="mt-2 text-[11px]" style={{ color: COLORS.slateSoft }}>
                     Uses a Twilio WhatsApp Sandbox — your number must have joined the sandbox to receive messages.
                   </p>
+                </div>
+
+                {/* Email send */}
+                <div className="px-5 sm:px-6 py-5" style={{ borderTop: `1px solid ${COLORS.paperEdge}` }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <FileText size={18} color={COLORS.navyInk} />
+                    <p className="text-sm font-semibold" style={{ color: "#111" }}>Send this report by email</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className="flex-1 px-3 py-2 rounded-md text-sm focus:outline-none"
+                      style={{ border: `1px solid ${COLORS.paperEdge}` }}
+                    />
+                    <button
+                      onClick={handleSendEmail} disabled={sendingEmail}
+                      className="px-5 py-2 rounded-md text-sm font-semibold text-white flex items-center justify-center gap-2"
+                      style={{ backgroundColor: sendingEmail ? "#9CA3AF" : COLORS.navyInk }}
+                    >
+                      {sendingEmail ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+                      {sendingEmail ? "Sending..." : "Send PDF"}
+                    </button>
+                  </div>
+                  {emailMsg && (
+                    <p className="mt-2 text-xs" style={{ color: emailKind === "success" ? "#15803D" : "#DC2626" }}>{emailMsg}</p>
+                  )}
                 </div>
 
                 <div className="px-5 sm:px-6 py-3 text-[11px]" style={{ color: COLORS.slateSoft, borderTop: `1px solid ${COLORS.paperEdge}` }}>

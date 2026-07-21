@@ -1,0 +1,164 @@
+{
+  "name": "Send Email Report",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-email",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -752,
+        -144
+      ],
+      "id": "3792ed45-6ab8-4a56-aae0-03710286fe9c",
+      "name": "Webhook",
+      "webhookId": "21fed8b4-b763-4c4a-9798-6c532d8f296d"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = items[0].json.body;\n\nconst riskColors = { HIGH: '#dc2626', MEDIUM: '#d97706', LOW: '#16a34a' };\nconst riskColor = riskColors[data.riskLevel] || '#555';\n\nconst fullHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<style>\n  body { font-family: Arial, sans-serif; color: #222; margin: 40px; }\n  h1 { color: #1a1a1a; font-size: 22px; }\n  .meta { font-size: 14px; color: #555; margin-bottom: 20px; }\n  .risk-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; color: white; font-weight: bold; background: ${riskColor}; }\n  hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; }\n  h3 { color: #1a1a1a; margin-top: 20px; }\n  ul { padding-left: 20px; line-height: 1.6; }\n  p { line-height: 1.6; }\n  .footer { margin-top: 30px; font-size: 11px; color: #999; }\n</style>\n</head>\n<body>\n  <h1>Vehicle Due-Diligence Report</h1>\n  <div class=\"meta\">\n    <strong>${data.make || ''} ${data.model || ''}</strong> — Registration: ${data.registration}<br/>\n    Risk Level: <span class=\"risk-badge\">${data.riskLevel || 'N/A'}</span> (Score: ${data.riskScore ?? 'N/A'})\n  </div>\n  <hr/>\n  ${data.reportHtml || ''}\n  <div class=\"footer\">\n    Generated automatically from DVSA MOT History data + AI research. Not professional inspection advice.\n  </div>\n</body>\n</html>\n`;\n\nreturn [{ json: { html: fullHtml, email: data.email } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        -144
+      ],
+      "id": "afaa7685-6993-495a-8c44-660ff31956ec",
+      "name": "Build Printable Report"
+    },
+    {
+      "parameters": {
+        "html_content": "={{ $json.html }}"
+      },
+      "type": "n8n-nodes-htmlcsstopdf.htmlcsstopdf",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        -144
+      ],
+      "id": "2b6faa5e-337f-41da-91f0-8d75fe09c665",
+      "name": "Convert HTML to PDF",
+      "credentials": {
+        "htmlcsstopdfApi": {
+          "id": "oH8mVKyF6UOlzOvi",
+          "name": "HTML to PDF account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Build Printable Report').item.json.email }}",
+        "subject": "Your Vehicle Due-Diligence Report",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #222;\">\n  <div style=\"background-color: #16181C; padding: 24px; border-radius: 8px 8px 0 0; text-align: center;\">\n    <span style=\"font-family: monospace; font-weight: 800; letter-spacing: 1px; color: white; font-size: 18px;\">\n      PLATE<span style=\"color: #FFD400;\">CHECK</span>\n    </span>\n  </div>\n\n  <div style=\"background-color: #ffffff; padding: 32px 28px; border: 1px solid #E4E7EB; border-radius: 0 0 8px 8px;\">\n    <h2 style=\"color: #111; font-size: 20px; margin-top: 0;\">Your report is ready 🚗</h2>\n    <p style=\"line-height: 1.6; color: #444;\">\n      Hi there,\n    </p>\n    <p style=\"line-height: 1.6; color: #444;\">\n      Thanks for using PlateCheck. We've pulled the official MOT history, checked the mileage trail,\n      and had our AI research known issues for this vehicle — your full report is ready to view.\n    </p>\n\n    <div style=\"text-align: center; margin: 28px 0;\">\n      <a href=\"{{ $json.pdf_url }}\"\n         style=\"background-color: #0B2545; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: bold; display: inline-block;\">\n        View Your Report (PDF)\n      </a>\n    </div>\n\n    <p style=\"line-height: 1.6; color: #444; font-size: 14px;\">\n      Whether it's good news or a few things worth asking the seller about, we hope this helps you\n      buy with a bit more confidence.\n    </p>\n\n    <p style=\"line-height: 1.6; color: #444; font-size: 14px; margin-bottom: 0;\">\n      Safe travels,<br/>\n      <strong>The PlateCheck Team</strong>\n    </p>\n  </div>\n\n  <p style=\"text-align: center; font-size: 11px; color: #8A93A1; margin-top: 20px;\">\n    This report was generated automatically and is not a substitute for a professional inspection.\n  </p>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        -144
+      ],
+      "id": "9d1e0726-35fb-4a1f-b048-bdd5c75d79dc",
+      "name": "Send a message",
+      "webhookId": "4e60f474-ab1c-4355-ac2f-7a1d63653812",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "xJE6g9fVWgR0kWGH",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Report sent to email\" } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        80,
+        -144
+      ],
+      "id": "ed3f0536-3f12-4c17-9589-63907df89b38",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Printable Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Printable Report": {
+      "main": [
+        [
+          {
+            "node": "Convert HTML to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert HTML to PDF": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b4ce4646-d796-49d8-81d5-6d3edf3a7250",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "703dbf1457be9ba8a0b61ef8297179cdbb62200e913bd579c56fc05faf683aeb"
+  },
+  "id": "oqmwd6Km7OfN4KgG",
+  "tags": []
+}
