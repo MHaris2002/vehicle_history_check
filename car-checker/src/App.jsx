@@ -5,6 +5,7 @@ import {
   Database, Zap, AlertTriangle, Gauge, EyeOff, Fingerprint,
 } from "lucide-react";
 import carHeroImage from "./assets/car.avif";
+import { formatReg, isPlausiblePlate, linkifyHtml } from "./utils/format";
 
 const COLORS = {
   asphalt: "#16181C",
@@ -22,30 +23,6 @@ const RISK_META = {
   MEDIUM: { color: "#B45309", bg: "#FEF3C7", label: "Medium risk", Icon: ShieldQuestion },
   LOW: { color: "#15803D", bg: "#DCFCE7", label: "Low risk", Icon: ShieldCheck },
 };
-
-function formatReg(raw) {
-  return raw.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 8);
-}
-function isPlausiblePlate(reg) {
-  return /^[A-Z0-9]{2,8}$/.test(reg);
-}
-
-// Safety-net linkifier: converts markdown-style [text](url) and raw URLs
-// into real clickable <a> tags. The proper long-term fix is having the
-// backend emit real <a> tags directly.
-function linkifyHtml(html) {
-  if (!html) return "";
-  let out = html.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#0B2545; text-decoration:underline;">$1</a>'
-  );
-  out = out.replace(
-    /(?<!["'=])(https?:\/\/[^\s<"']+)/g,
-    '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#0B2545; text-decoration:underline;">$1</a>'
-  );
-  out = out.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ');
-  return out;
-}
 
 function NavBar({ page, setPage, mobileOpen, setMobileOpen }) {
   return (
