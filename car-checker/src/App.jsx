@@ -8,6 +8,7 @@ import About from "./pages/About";
 import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
 import Guides from "./pages/Guides";
+import GuideArticle from "./pages/GuideArticle";
 import { COLORS } from "./theme";
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/guides" element={<Guides />} />
+          <Route path="/guides/:slug" element={<GuideArticle />} />
         </Routes>
         <Footer />
       </div>
